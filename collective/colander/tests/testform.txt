@@ -1,0 +1,187 @@
+<form id="deform" action="" method="POST" enctype="multipart/form-data" accept-charset="utf-8" class="wufoo">
+
+  <fieldset class="deformFormFieldset">
+
+    
+
+    <input type="hidden" name="_charset_" />
+    <input type="hidden" name="__formid__" value="deform" />
+    <ul>
+      
+      
+      
+      
+      
+      <li title="description" id="item-deformField1">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField1">title<span class="req" id="req-deformField1">*</span>
+  </label>
+  
+    <input type="text" name="ascii_line" value="default" id="deformField1" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField2">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField2">title<span class="req" id="req-deformField2">*</span>
+  </label>
+  
+    <input type="text" name="password" value="None" id="deformField2" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField3">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField3">title<span class="req" id="req-deformField3">*</span>
+  </label>
+  
+    <input type="text" name="text_line" value="default" id="deformField3" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField4">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField4">title<span class="req" id="req-deformField4">*</span>
+  </label>
+  
+    <input type="text" name="text" value="default" id="deformField4" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField5">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField5">title<span class="req" id="req-deformField5">*</span>
+  </label>
+  <input type="checkbox" name="bool_" value="true" id="deformField5" checked="True" />
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField6">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField6">title<span class="req" id="req-deformField6">*</span>
+  </label>
+  
+    <input type="text" name="bytes_" value="default" id="deformField6" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="" id="item-deformField7">
+  <!-- mapping_item -->
+  <label class="desc" title="" for="deformField7"><span class="req" id="req-deformField7">*</span>
+  </label>
+  
+    <input type="text" name="choice" value="None" id="deformField7" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField8">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField8">title<span class="req" id="req-deformField8">*</span>
+  </label>
+  
+    <input type="text" name="bytes_line" value="default" id="deformField8" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField9">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField9">title
+  </label>
+  
+    <input type="text" name="ascii_" value="default" id="deformField9" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField10">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField10">title<span class="req" id="req-deformField10">*</span>
+  </label>
+  
+    <input type="text" name="float_" value="1.5" id="deformField10" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField11">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField11">title<span class="req" id="req-deformField11">*</span>
+  </label>
+  
+    <input type="date" name="date" value="2010-10-10" id="deformField11" />
+    <script type="text/javascript">
+      deform.addCallback(
+        'deformField11',
+        function(oid) {
+            $('#' + oid).datepicker({dateFormat: 'yy-mm-dd'});
+        }
+      );
+    </script>
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField12">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField12">title<span class="req" id="req-deformField12">*</span>
+  </label>
+  
+    <input type="text" name="int_" value="1" id="deformField12" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li> <li title="description" id="item-deformField13">
+  <!-- mapping_item -->
+  <label class="desc" title="description" for="deformField13">title<span class="req" id="req-deformField13">*</span>
+  </label>
+  
+    <input type="text" name="datetime" value="2010-10-10T10:10:00+00:00" id="deformField13" />
+    
+
+
+  
+
+  <!-- /mapping_item -->
+</li>
+      
+      <li class="buttons">
+        
+      </li>
+      
+    </ul>
+    
+  </fieldset>
+
+
+  
+</form>

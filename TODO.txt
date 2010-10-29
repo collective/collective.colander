@@ -1,0 +1,18 @@
+TODO
+====
+
+A number of things are not implemented yet:
+
+- [ ] Implement List
+- [ ] Implement Choice
+
+  - [ ] Implement Choice with tuple or list as valid items
+  - [ ] Implement Choice with named Vocabularies
+  - [ ] Implement Choice type Constraint.
+
+- [ ] Support sources
+- [ ] Support constraint declarations
+- [ ] Support constraints on the multitude of different Text types (ASCII...)
+- [ ] Add support to modify default widgets for colander schema based forms
+  based on zope.schema (TextLine vs Text, Password)
+- [ ] A number of lesser used fields like IDottedName are missing
