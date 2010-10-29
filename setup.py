@@ -28,7 +28,7 @@ setup(name='collective.colander',
           'zope.schema'
           # -*- Extra requirements: -*-
       ],
-      test_requires=['deform'],
+      tests_require=['deform'],
       test_suite = "collective.colander.tests",
       entry_points="""
       # -*- Entry points: -*-
