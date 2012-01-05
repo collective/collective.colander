@@ -25,7 +25,10 @@ setup(name='collective.colander',
       install_requires=[
           'setuptools',
           'colander',
-          'zope.schema'
+          'zope.schema',
+          'plone.app.textfield',
+          'deform',
+          'plone.namedfile',
           # -*- Extra requirements: -*-
       ],
       tests_require=['deform'],
