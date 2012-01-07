@@ -1,21 +1,45 @@
 from plone.app.textfield import RichText
-from plone.namedfile.field import NamedBlobImage
-from zope.schema import _bootstrapfields as zfields2
-from zope.schema import _field as zfields
-from zope.component import getUtility
-from zope.schema.interfaces import IVocabularyFactory
-from zope.schema.interfaces import IVocabulary
-import colander
-import deform
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import getAdditionalSchemata
+from plone.namedfile.field import NamedBlobImage
 from translationstring import TranslationString
+from zope.component import getUtility
 from zope.i18nmessageid.message import Message
+from zope.schema import _bootstrapfields as zfields2
+from zope.schema import _field as zfields
+from zope.schema.interfaces import IVocabulary
+from zope.schema.interfaces import IVocabularyFactory
+import colander
+import deform
+
+class SequenceAsTuple(colander.Sequence):
+    def serialize(self, node, appstruct, accept_scalar=None):
+        return tuple(super(SequenceAsTuple, self).serialize(node,
+                                                            appstruct,
+                                                            accept_scalar))
+    def deserialize(self, node, cstruct, accept_scalar=None):
+        return tuple(super(SequenceAsTuple, self).deserialize(node,
+                                                              cstruct,
+                                                              accept_scalar))
+
+class ZDateTime(colander.DateTime):
+    def serialize(self, node, appstruct):
+        if appstruct != colander.null:
+            if hasattr(appstruct, 'asdatetime'):
+                appstruct = appstruct.asdatetime()
+        return super(ZDateTime, self).serialize(node, appstruct)
+
+#    def deserialize(self, node, cstruct):
+#        ob = datetime.strptime(cstruct, "%Y-%m-%dT%H:%M:%S")
+#        return super(ZDateTime, self).deserialize(node, ob)
 
 
 def extractFieldsFromDexterityObj(obj):
-    fti = getUtility(IDexterityFTI, name=obj.portal_type)
+    return extractFieldsFromDexterityFTI(obj.portal_type, obj)
 
+
+def extractFieldsFromDexterityFTI(fti_name, context):
+    fti = getUtility(IDexterityFTI, name=fti_name)
     def extractFields(schema):
         retval = []
         for baseschema in schema.__bases__:
@@ -25,7 +49,7 @@ def extractFieldsFromDexterityObj(obj):
         return retval
     retval = []
     for schema in [fti.lookupSchema()] + \
-            [x for x in getAdditionalSchemata(context=obj)]:
+            [x for x in getAdditionalSchemata(portal_type=fti_name)]:
         retval.extend(extractFields(schema))
     retval.sort(key=lambda x:x.order)
     return retval
@@ -46,7 +70,7 @@ def deferredVocabularyValidator(node, kw):
             vocabulary.getTerm(value)
             return True
         except LookupError:
-            raise colander.Invalid()
+            raise colander.Invalid(node, "Illegal value selected", value)
     return colander.Function(validate)
 
 @colander.deferred
@@ -85,8 +109,9 @@ def mapZopeFieldsToColanderFields(fields):
                 validator=validator,
                 default=field.default or colander.null)})
     for field in fields:
+        field_cls = field.__class__
         name = field.__name__
-        if field.__class__ in [
+        if field_cls in [
             RichText,
             zfields.URI,
             zfields.ASCIILine,
@@ -100,60 +125,71 @@ def mapZopeFieldsToColanderFields(fields):
             ]:
             widget = None
             validator = None
-            if field.__class__ in [zfields2.Text]:
+            if field_cls in [zfields2.Text]:
                 widget = deform.widget.TextAreaWidget(rows=10, cols=60)
-            if field.__class__ in [zfields.Choice]:
+            if field_cls in [zfields.Choice]:
                 widget = deferredVocularyWidget
                 validator = deferredVocabularyValidator
-            if field.__class__ in [RichText]:
+            if field_cls in [RichText]:
                 widget = deform.widget.RichTextWidget()
                 widget.skin = 'plone'
+                widget.strict_loading_mode = 'true'
                 widget.theme = 'advanced'
             adder(colander.String, name, field, widget, validator)
             retval[field].field = field
-        elif field.__class__ in [zfields2.Bool]:
+        elif field_cls in [zfields2.Bool]:
             adder(colander.Boolean, name, field)
-        elif field.__class__ in [zfields.Float]:
+        elif field_cls in [zfields.Float]:
             adder(colander.Float, name, field)
-        elif field.__class__ in [zfields.Date]:
+        elif field_cls in [zfields.Date]:
             adder(colander.Date, name, field)
-        elif field.__class__ in [zfields.Datetime]:
-            adder(colander.DateTime, name, field)
-        elif field.__class__ in [zfields2.Int]:
+        elif field_cls in [zfields.Datetime]:
+            adder(ZDateTime, name, field)
+        elif field_cls in [zfields2.Int]:
             adder(colander.Integer, name, field)
-        elif field.__class__ in [NamedBlobImage]:
+        elif field_cls in [NamedBlobImage]:
             # XXX Use session
             class MemoryTmpStore(dict):
                 def preview_url(self, name):
                     return None
             adder(deform.FileData, name, field, deform.widget.FileUploadWidget(MemoryTmpStore()))
-        elif field.__class__ == zfields.Tuple\
+        elif field_cls == zfields.Tuple\
                 and field.value_type.__class__ in [zfields2.TextLine]:
             if field.value_type.__class__ == zfields2.TextLine:
-                list_field = colander.SchemaNode(colander.Sequence(),
-                                                 colander.SchemaNode(colander.String()),
+                default = field.default
+                if default == None:
+                    default = tuple()
+                list_field = colander.SchemaNode(SequenceAsTuple(),
+                                                 colander.SchemaNode(colander.String(),
+                                                                     name=name + '_item',
+                                                                     title=''),
                                                  name=convertI18n(name),
                                                  title=convertI18n(field.title),
                                                  description=convertI18n(field.description),
-                                                 default=field.default or colander.null)
+                                                 default=default)
                 retval[field] = list_field
-        elif field.__class__ == zfields.List \
+        elif field_cls == zfields.List \
                 and field.value_type.__class__ in [zfields.Choice]:
             if field.value_type.__class__ == zfields.Choice:
+                default = field.default
+                if default == None:
+                    default = []
                 list_field = colander.SchemaNode(colander.Sequence(),
                                                  colander.SchemaNode(colander.String(),
                                                                      widget=deferredVocularyWidget,
                                                                      validator=deferredVocabularyValidator,
+                                                                     name=name+'_item',
+                                                                     title='',
                                                                      field=field.value_type),
                                                  name=convertI18n(name),
                                                  title=convertI18n(field.title),
                                                  description=convertI18n(field.description),
-                                                 default=field.default or colander.null)
+                                                 default=default)
                 retval[field] = list_field
         else:
             retval[field] = None
-        if not field.required and retval[field]:
-            retval[field].missing = field.default or ''
+        if not field.required:
+            retval[field].missing = field.missing_value
     return retval
 
 
