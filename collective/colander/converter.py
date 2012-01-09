@@ -1,8 +1,10 @@
+from Products.CMFCore.utils import getToolByName
 from plone.app.textfield import RichText
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import getAdditionalSchemata
 from plone.namedfile.field import NamedBlobImage
 from translationstring import TranslationString
+from z3c.relationfield.schema import RelationChoice
 from zope.component import getUtility
 from zope.i18nmessageid.message import Message
 from zope.schema import _bootstrapfields as zfields2
@@ -53,6 +55,13 @@ def extractFieldsFromDexterityFTI(fti_name, context):
         retval.extend(extractFields(schema))
     retval.sort(key=lambda x:x.order)
     return retval
+
+@colander.deferred
+def deferredContentValidator(node, kw):
+    catalog = getToolByName(kw['context'], 'portal_catalog')
+    def validate(value):
+        return catalog.searchResults(UID=value)
+    return colander.Function(validate)
 
 @colander.deferred
 def deferredVocabularyValidator(node, kw):
@@ -186,6 +195,22 @@ def mapZopeFieldsToColanderFields(fields):
                                                  description=convertI18n(field.description),
                                                  default=default)
                 retval[field] = list_field
+        elif field_cls == RelationChoice:
+            default = field.default
+            if default == None:
+                default = []
+            list_field = colander.SchemaNode(colander.Sequence(),
+                                             colander.SchemaNode(colander.String(),
+                                                                 validator=deferredContentValidator,
+                                                                 name=name+'_item',
+                                                                 title=''),
+                                             name=convertI18n(name),
+                                             object_provides_filter='|'.join(field.vocabulary.selectable_filter.criteria['object_provides']),
+
+                                             title=convertI18n(field.title),
+                                             description=convertI18n(field.description),
+                                             default=default)
+            retval[field] = list_field
         else:
             retval[field] = None
         if not field.required:
