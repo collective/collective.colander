@@ -4,7 +4,7 @@ from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import getAdditionalSchemata
 from plone.namedfile.field import NamedBlobImage
 from translationstring import TranslationString
-from z3c.relationfield.schema import RelationChoice
+from z3c.relationfield.schema import RelationChoice, RelationList
 from zope.component import getUtility
 from zope.i18nmessageid.message import Message
 from zope.schema import _bootstrapfields as zfields2
@@ -162,6 +162,17 @@ def mapZopeFieldsToColanderFields(fields):
                 def preview_url(self, name):
                     return None
             adder(deform.FileData, name, field, deform.widget.FileUploadWidget(MemoryTmpStore()))
+        elif field_cls == RelationChoice:
+            default = field.default
+            our_field = colander.SchemaNode(colander.String(),
+                                            validator=deferredContentValidator,
+                                            name=convertI18n(name),
+                                            title=convertI18n(field.title),
+                                            description=convertI18n(field.description),
+                                            default=default,
+                                            object_provides_filter='|'.join(field.vocabulary.selectable_filter.criteria['object_provides']))
+            retval[field] = our_field
+
         elif field_cls == zfields.Tuple\
                 and field.value_type.__class__ in [zfields2.TextLine]:
             if field.value_type.__class__ == zfields2.TextLine:
@@ -195,8 +206,8 @@ def mapZopeFieldsToColanderFields(fields):
                                                  description=convertI18n(field.description),
                                                  default=default)
                 retval[field] = list_field
-        elif field_cls == RelationChoice:
-            field.missing_value = field.missing_value or []
+        elif field_cls == RelationList:
+#            field.missing_value = field.missing_value or []
             default = field.default
             if default == None:
                 default = []
@@ -206,7 +217,7 @@ def mapZopeFieldsToColanderFields(fields):
                                                                  name=name+'_item',
                                                                  title=''),
                                              name=convertI18n(name),
-                                             object_provides_filter='|'.join(field.vocabulary.selectable_filter.criteria['object_provides']),
+                                             object_provides_filter='|'.join(field.value_type.vocabulary.selectable_filter.criteria.get('object_provides', [])),
 
                                              title=convertI18n(field.title),
                                              description=convertI18n(field.description),
