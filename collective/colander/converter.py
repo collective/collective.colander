@@ -211,6 +211,7 @@ def mapZopeFieldsToColanderFields(fields):
                                                  default=default)
                 retval[field] = list_field
         elif field_cls == RelationChoice:
+            field.missing_value = field.missing_value or []
             default = field.default
             if default == None:
                 default = []
