@@ -13,6 +13,8 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.interfaces import IVocabularyFactory
 import colander
 import deform
+from plone.supermodel.interfaces import FIELDSETS_KEY
+
 
 class SequenceAsTuple(colander.Sequence):
     def serialize(self, node, appstruct, accept_scalar=None):
@@ -39,7 +41,20 @@ class ZDateTime(colander.DateTime):
 def extractFieldsFromDexterityObj(obj):
     return extractFieldsFromDexterityFTI(obj.portal_type, obj)
 
-
+def getAllFieldSets(fti):
+    fieldsets = set()
+    def extractFieldSets(schema):
+        retval = []
+        for baseschema in schema.__bases__:
+            retval.extend(extractFieldsets(baseschema))
+        for fieldset in schema.getTaggedValue(FIELDSETS_KEY):
+            retval.append(fieldset)
+        return retval
+    for schema in [fti.lookupSchema()] + \
+        [x for x in getAdditionalSchemata(portal_type=fti.name)]:
+        fieldsets.append(extractFieldSets(schema)
+    return fieldsets
+        
 def extractFieldsFromDexterityFTI(fti_name, context):
     fti = getUtility(IDexterityFTI, name=fti_name)
     def extractFields(schema):
