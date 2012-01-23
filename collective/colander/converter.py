@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from Products.CMFCore.utils import getToolByName
 from plone.app.textfield import RichText
 from plone.dexterity.interfaces import IDexterityFTI
@@ -17,46 +19,65 @@ from plone.supermodel.interfaces import FIELDSETS_KEY
 
 
 class SequenceAsTuple(colander.Sequence):
-    def serialize(self, node, appstruct, accept_scalar=None):
+
+    def serialize(
+        self,
+        node,
+        appstruct,
+        accept_scalar=None,
+        ):
         return tuple(super(SequenceAsTuple, self).serialize(node,
-                                                            appstruct,
-                                                            accept_scalar))
-    def deserialize(self, node, cstruct, accept_scalar=None):
+                     appstruct, accept_scalar))
+
+    def deserialize(
+        self,
+        node,
+        cstruct,
+        accept_scalar=None,
+        ):
         return tuple(super(SequenceAsTuple, self).deserialize(node,
-                                                              cstruct,
-                                                              accept_scalar))
+                     cstruct, accept_scalar))
+
 
 class ZDateTime(colander.DateTime):
+
     def serialize(self, node, appstruct):
         if appstruct != colander.null:
             if hasattr(appstruct, 'asdatetime'):
                 appstruct = appstruct.asdatetime()
         return super(ZDateTime, self).serialize(node, appstruct)
 
+
 #    def deserialize(self, node, cstruct):
 #        ob = datetime.strptime(cstruct, "%Y-%m-%dT%H:%M:%S")
 #        return super(ZDateTime, self).deserialize(node, ob)
 
-
 def extractFieldsFromDexterityObj(obj):
     return extractFieldsFromDexterityFTI(obj.portal_type, obj)
 
-def getAllFieldSets(fti):
+
+def getAllFieldSets(context):
+    fti = getUtility(IDexterityFTI, name=context.portal_type)
     fieldsets = set()
+
     def extractFieldSets(schema):
         retval = []
         for baseschema in schema.__bases__:
-            retval.extend(extractFieldsets(baseschema))
-        for fieldset in schema.getTaggedValue(FIELDSETS_KEY):
+            retval.extend(extractFieldSets(baseschema))
+        for fieldset in schema.queryTaggedValue(FIELDSETS_KEY) or []:
             retval.append(fieldset)
         return retval
-    for schema in [fti.lookupSchema()] + \
-        [x for x in getAdditionalSchemata(portal_type=fti.name)]:
-        fieldsets.append(extractFieldSets(schema)
+
+    for schema in [fti.lookupSchema()] + [x for x in
+            getAdditionalSchemata(portal_type=context.portal_type)]:
+        for fieldset in extractFieldSets(schema):
+            fieldsets.add(fieldset)
     return fieldsets
-        
+
+
 def extractFieldsFromDexterityFTI(fti_name, context):
     fti = getUtility(IDexterityFTI, name=fti_name)
+
     def extractFields(schema):
         retval = []
         for baseschema in schema.__bases__:
@@ -64,22 +85,28 @@ def extractFieldsFromDexterityFTI(fti_name, context):
         for fieldname in schema.names():
             retval.append(schema[fieldname])
         return retval
+
     retval = []
-    for schema in [fti.lookupSchema()] + \
-            [x for x in getAdditionalSchemata(portal_type=fti_name)]:
+    for schema in [fti.lookupSchema()] + [x for x in
+            getAdditionalSchemata(portal_type=fti_name)]:
         retval.extend(extractFields(schema))
-    retval.sort(key=lambda x:x.order)
+    retval.sort(key=lambda x: x.order)
     return retval
+
 
 @colander.deferred
 def deferredContentValidator(node, kw):
     catalog = getToolByName(kw['context'], 'portal_catalog')
+
     def validate(value):
         return catalog.searchResults(UID=value)
+
     return colander.Function(validate)
+
 
 @colander.deferred
 def deferredVocabularyValidator(node, kw):
+
     def validate(value):
         if node.field.vocabulary:
             factory = node.field.vocabulary
@@ -94,15 +121,19 @@ def deferredVocabularyValidator(node, kw):
             vocabulary.getTerm(value)
             return True
         except LookupError:
-            raise colander.Invalid(node, "Illegal value selected", value)
+            raise colander.Invalid(node, 'Illegal value selected',
+                                   value)
+
     return colander.Function(validate)
+
 
 @colander.deferred
 def deferredVocularyWidget(node, kw):
     if node.field.vocabulary:
         factory = node.field.vocabulary
     else:
-        factory = getUtility(IVocabularyFactory, name=node.field.vocabularyName)
+        factory = getUtility(IVocabularyFactory,
+                             name=node.field.vocabularyName)
     if IVocabulary.providedBy(factory):
         vocabulary = factory
     else:
@@ -114,24 +145,25 @@ def deferredVocularyWidget(node, kw):
 
 
 def mapZopeFieldsToColanderFields(fields):
+
     def convertI18n(obj):
         if obj.__class__ == Message:
-            return TranslationString(unicode(obj),
-                                     domain=obj.domain,
-                                     default=obj.default,
-                                     mapping=obj.mapping)
+            return TranslationString(unicode(obj), domain=obj.domain,
+                    default=obj.default, mapping=obj.mapping)
         else:
             return obj
+
     retval = {}
-    adder = lambda typ, name, field, widget=None, validator=None:\
-        retval.update({field: colander.SchemaNode(\
-                typ(),
-                name=convertI18n(name),
-                title=convertI18n(field.title),
-                description=convertI18n(field.description),
-                widget=widget,
-                validator=validator,
-                default=field.default or colander.null)})
+    adder = lambda typ, name, field, widget=None, validator=None: \
+        retval.update({field: colander.SchemaNode(
+            typ(),
+            name=convertI18n(name),
+            title=convertI18n(field.title),
+            description=convertI18n(field.description),
+            widget=widget,
+            validator=validator,
+            default=field.default or colander.null,
+            )})
     for field in fields:
         field_cls = field.__class__
         name = field.__name__
@@ -172,71 +204,87 @@ def mapZopeFieldsToColanderFields(fields):
         elif field_cls in [zfields2.Int]:
             adder(colander.Integer, name, field)
         elif field_cls in [NamedBlobImage]:
+
             # XXX Use session
+
             class MemoryTmpStore(dict):
+
                 def preview_url(self, name):
                     return None
-            adder(deform.FileData, name, field, deform.widget.FileUploadWidget(MemoryTmpStore()))
+
+            adder(deform.FileData, name, field,
+                  deform.widget.FileUploadWidget(MemoryTmpStore()))
         elif field_cls == RelationChoice:
             default = field.default
-            our_field = colander.SchemaNode(colander.String(),
-                                            validator=deferredContentValidator,
-                                            name=convertI18n(name),
-                                            title=convertI18n(field.title),
-                                            description=convertI18n(field.description),
-                                            default=default,
-                                            object_provides_filter='|'.join(field.vocabulary.selectable_filter.criteria['object_provides']))
+            our_field = colander.SchemaNode(
+                colander.String(),
+                validator=deferredContentValidator,
+                name=convertI18n(name),
+                title=convertI18n(field.title),
+                description=convertI18n(field.description),
+                default=default,
+                object_provides_filter='|'.join(field.vocabulary.selectable_filter.criteria['object_provides'
+                        ]),
+                )
             retval[field] = our_field
+        elif field_cls == zfields.Tuple and field.value_type.__class__ \
+            in [zfields2.TextLine]:
 
-        elif field_cls == zfields.Tuple\
-                and field.value_type.__class__ in [zfields2.TextLine]:
             if field.value_type.__class__ == zfields2.TextLine:
                 default = field.default
                 if default == None:
                     default = tuple()
-                list_field = colander.SchemaNode(SequenceAsTuple(),
-                                                 colander.SchemaNode(colander.String(),
-                                                                     name=name + '_item',
-                                                                     title=''),
-                                                 name=convertI18n(name),
-                                                 title=convertI18n(field.title),
-                                                 description=convertI18n(field.description),
-                                                 default=default)
+                list_field = colander.SchemaNode(
+                    SequenceAsTuple(),
+                    colander.SchemaNode(colander.String(), name=name
+                            + '_item', title=''),
+                    name=convertI18n(name),
+                    title=convertI18n(field.title),
+                    description=convertI18n(field.description),
+                    default=default,
+                    )
                 retval[field] = list_field
-        elif field_cls == zfields.List \
-                and field.value_type.__class__ in [zfields.Choice]:
+        elif field_cls == zfields.List and field.value_type.__class__ \
+            in [zfields.Choice]:
             if field.value_type.__class__ == zfields.Choice:
                 default = field.default
                 if default == None:
                     default = []
-                list_field = colander.SchemaNode(colander.Sequence(),
-                                                 colander.SchemaNode(colander.String(),
-                                                                     widget=deferredVocularyWidget,
-                                                                     validator=deferredVocabularyValidator,
-                                                                     name=name+'_item',
-                                                                     title='',
-                                                                     field=field.value_type),
-                                                 name=convertI18n(name),
-                                                 title=convertI18n(field.title),
-                                                 description=convertI18n(field.description),
-                                                 default=default)
+                list_field = colander.SchemaNode(
+                    colander.Sequence(),
+                    colander.SchemaNode(
+                        colander.String(),
+                        widget=deferredVocularyWidget,
+                        validator=deferredVocabularyValidator,
+                        name=name + '_item',
+                        title='',
+                        field=field.value_type,
+                        ),
+                    name=convertI18n(name),
+                    title=convertI18n(field.title),
+                    description=convertI18n(field.description),
+                    default=default,
+                    )
                 retval[field] = list_field
         elif field_cls == RelationList:
+
 #            field.missing_value = field.missing_value or []
+
             default = field.default
             if default == None:
                 default = []
-            list_field = colander.SchemaNode(colander.Sequence(),
-                                             colander.SchemaNode(colander.String(),
-                                                                 validator=deferredContentValidator,
-                                                                 name=name+'_item',
-                                                                 title=''),
-                                             name=convertI18n(name),
-                                             object_provides_filter='|'.join(field.value_type.vocabulary.selectable_filter.criteria.get('object_provides', [])),
-
-                                             title=convertI18n(field.title),
-                                             description=convertI18n(field.description),
-                                             default=default)
+            list_field = colander.SchemaNode(
+                colander.Sequence(),
+                colander.SchemaNode(colander.String(),
+                                    validator=deferredContentValidator,
+                                    name=name + '_item', title=''),
+                name=convertI18n(name),
+                object_provides_filter='|'.join(field.value_type.vocabulary.selectable_filter.criteria.get('object_provides'
+                        , [])),
+                title=convertI18n(field.title),
+                description=convertI18n(field.description),
+                default=default,
+                )
             retval[field] = list_field
         else:
             retval[field] = None
@@ -250,7 +298,7 @@ def convertToColander(fields):
     mapping = mapZopeFieldsToColanderFields(fields)
     for field in fields:
         if not mapping[field]:
-            raise TypeError("Oh, the mapping for %s has not been defined yet" \
-                                % field.__class__)
+            raise TypeError('Oh, the mapping for %s has not been defined yet'
+                             % field.__class__)
         retval.add(mapping[field])
     return retval
