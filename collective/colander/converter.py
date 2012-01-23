@@ -56,8 +56,7 @@ def extractFieldsFromDexterityObj(obj):
     return extractFieldsFromDexterityFTI(obj.portal_type, obj)
 
 
-def getAllFieldSets(context):
-    fti = getUtility(IDexterityFTI, name=context.portal_type)
+def getAllFieldSets(fti, portal_type):
     fieldsets = set()
 
     def extractFieldSets(schema):
@@ -69,7 +68,7 @@ def getAllFieldSets(context):
         return retval
 
     for schema in [fti.lookupSchema()] + [x for x in
-            getAdditionalSchemata(portal_type=context.portal_type)]:
+            getAdditionalSchemata(portal_type=portal_type)]:
         for fieldset in extractFieldSets(schema):
             fieldsets.add(fieldset)
     return fieldsets
