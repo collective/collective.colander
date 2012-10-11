@@ -4,7 +4,7 @@ from Products.CMFCore.utils import getToolByName
 from plone.app.textfield import RichText
 from plone.dexterity.interfaces import IDexterityFTI
 from plone.dexterity.utils import getAdditionalSchemata
-from plone.namedfile.field import NamedBlobImage
+from plone.namedfile.field import NamedBlobImage, NamedImage
 from translationstring import TranslationString
 from z3c.relationfield.schema import RelationChoice, RelationList
 from zope.component import getUtility
@@ -202,7 +202,7 @@ def mapZopeFieldsToColanderFields(fields):
             adder(ZDateTime, name, field)
         elif field_cls in [zfields2.Int]:
             adder(colander.Integer, name, field)
-        elif field_cls in [NamedBlobImage]:
+        elif field_cls in [NamedBlobImage, NamedImage]:
 
             # XXX Use session
 

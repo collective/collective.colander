@@ -29,6 +29,7 @@ setup(name='collective.colander',
           'plone.app.textfield',
           'deform',
           'plone.namedfile',
+          'z3c.blobfile',
           # -*- Extra requirements: -*-
       ],
       tests_require=['deform'],
